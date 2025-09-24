@@ -12,6 +12,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from src.exception import CustomException
 from src.logger import logging
 import os
+from src.utils import save_object
 
 @dataclass
 class DataTransformationConfig:
@@ -27,7 +28,7 @@ class DataTransformation:
             categorical_columns = [
                 "gender",
                 "race/ethnicity",
-                "parentel level of education",
+                "parental level of education",
                 "lunch",
                 "test preparation course"
             ]
@@ -43,7 +44,7 @@ class DataTransformation:
                 steps=[
                 ("imputer", SimpleImputer(strategy="most_frequent")),
                 ("one_hot_encoder",OneHotEncoder()),
-                ("scaler",StandardScaler())
+                ("scaler",StandardScaler(with_mean=False))
                     ]
                 )
             logging.info("Numerical columns scaling completed")
@@ -52,7 +53,7 @@ class DataTransformation:
             preprocessor=ColumnTransformer(
                 [
                     ("num_pipeline",num_pipeline,numerical_columns),
-                    ("cat_pipeline",categorical_columns)
+                    ("cat_pipeline",cat_pipeline,categorical_columns)
                 ]
             )
             return preprocessor
@@ -70,7 +71,7 @@ class DataTransformation:
 
             preprocessing_obj = self.get_data_transformer_object()
 
-            target_column_name="math_score"
+            target_column_name="math score"
             numerical_columns = ["writing score","reading score"]
             
             input_feature_train_df=train_df.drop(columns=[target_column_name],axis=1)
@@ -87,7 +88,7 @@ class DataTransformation:
             input_feature_test_arr=preprocessing_obj.transform(input_feature_test_df)
             
             train_arr = np.c_[
-                input_feature_test_arr,np.array(target_feature_train_df)
+                input_feature_train_arr,np.array(target_feature_train_df)
             ]
             test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
             logging.info(f"Saved preprocessing object.")
@@ -102,5 +103,8 @@ class DataTransformation:
                 self.data_transformation_config.preprocessor_ob_file_path,
 
             )
-        except:
-            pass
+        
+        except Exception as e:
+            raise CustomException(e,sys) #type: ignore
+        
+
